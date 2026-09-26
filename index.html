@@ -6,47 +6,47 @@
     <title>時段記帳 App</title>
     <style>
         :root {
-            --bg: #f2f2f7;
-            --card: #ffffff;
-            --primary: #007aff;
-            --text: #1c1c1e;
-            --gray: #8e8e93;
-            --border: #e5e5ea;
-            --accent: #ff9500;
+            --bg: #1c1c1e; /* 參考圖二：深色背景 */
+            --card: #2c2c2e; /* 參考圖二：卡片深灰色 */
+            --primary: #0a84ff; /* Apple 經典亮藍色 */
+            --text: #ffffff; /* 白色文字 */
+            --gray: #aeaeb2;
+            --border: #3a3a3c;
+            --accent: #ff9f0a;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg); color: var(--text); padding-bottom: 100px; min-height: 100vh; }
-        header { background: var(--card); padding: 16px; text-align: center; font-size: 18px; font-weight: 600; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        header { background: var(--card); padding: 16px; text-align: center; font-size: 18px; font-weight: 600; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; color: var(--text); }
         .container { padding: 16px; }
-        .card { background: var(--card); padding: 16px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        h3 { font-size: 16px; margin-bottom: 12px; }
-        .form-group { margin-bottom: 12px; }
-        label { display: block; font-size: 13px; color: var(--gray); margin-bottom: 4px; font-weight: 500; }
-        input[type="number"], input[type="text"], select, input[type="month"] { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; background: #fafafa; }
+        .card { background: var(--card); padding: 16px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        h3 { font-size: 16px; margin-bottom: 12px; color: var(--text); }
+        .form-group { margin-bottom: 14px; }
+        label { display: block; font-size: 13px; color: var(--gray); margin-bottom: 6px; font-weight: 500; }
+        input[type="number"], input[type="text"], select, input[type="month"] { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; background: #1c1c1e; color: #fff; -webkit-appearance: none; }
         
-        /* 徹底修復的日曆佈局，確保 100% 顯示 */
-        .calendar-picker { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: #fff; }
-        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; font-size: 15px; }
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
-        .cal-day-label { font-size: 12px; color: var(--gray); font-weight: bold; padding: 4px 0; }
-        .cal-day { font-size: 15px; padding: 10px 0; border-radius: 8px; background: #f2f2f7; font-weight: 500; color: var(--text); cursor: pointer; }
+        /* 參考圖二的日曆樣式優化 */
+        .calendar-picker { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--card); }
+        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-weight: bold; font-size: 16px; }
+        .cal-btn { background: none; border: none; font-size: 18px; padding: 5px 15px; color: var(--primary); font-weight: bold; cursor: pointer; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center; }
+        .cal-day-label { font-size: 12px; color: var(--gray); font-weight: 600; padding: 4px 0; }
+        .cal-day { font-size: 15px; padding: 10px 0; border-radius: 50%; background: transparent; font-weight: 500; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; aspect-ratio: 1; }
         
-        /* 點選後的亮藍色樣式 */
+        /* 點選後的 Apple 風格圓圈選中狀態 */
         .cal-day.selected { background-color: var(--primary) !important; color: #fff !important; font-weight: bold; }
-        .cal-day.empty { background: transparent !important; color: transparent !important; cursor: default; }
+        .cal-day.empty { cursor: default; }
         
-        .toggle-group { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
+        .toggle-group { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
         .switch { position: relative; display: inline-block; width: 51px; height: 31px; }
         .switch input { display: none; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border); transition: .3s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #3a3a3c; transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--primary); }
         input:checked + .slider:before { transform: translateX(20px); }
         
         .btn { width: 100%; padding: 14px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; margin-top: 8px; cursor: pointer; }
-        .btn-cancel { background: var(--gray); margin-top: 4px; }
+        .btn-cancel { background: #48484a; margin-top: 4px; }
         
-        /* 月份摺疊樣式 */
         .month-folder { margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
         .month-header { background: var(--card); padding: 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .month-arrow { transition: transform 0.2s; color: var(--gray); }
@@ -54,7 +54,6 @@
         .month-content { display: none; background: var(--card); border-top: 1px solid var(--border); padding: 0 14px; }
         .month-folder.active .month-content { display: block; }
         
-        /* 列表樣式 */
         .item-list { list-style: none; }
         .item-cell { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); }
         .item-cell:last-child { border-bottom: none; }
@@ -64,12 +63,12 @@
         .cell-right { display: flex; align-items: center; gap: 8px; }
         .cell-price { font-size: 16px; font-weight: 600; }
         
-        .edit-btn { background: #e3f2fd; border: none; color: var(--primary); font-size: 13px; font-weight: 500; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
-        .del-btn { background: #ffebee; border: none; color: #ff3b30; font-size: 13px; font-weight: 500; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
-        .badge { background: #ffe6c7; color: var(--accent); font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 6px; }
+        .edit-btn { background: #3a3a3c; border: none; color: var(--primary); font-size: 13px; font-weight: 500; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+        .del-btn { background: #3a3a3c; border: none; color: #ff453a; font-size: 13px; font-weight: 500; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+        .badge { background: #3a3a3c; color: var(--accent); font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 6px; }
         
-        /* 徹底修復的固定底欄，防止點擊失效 */
-        .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background: var(--card); border-top: 1px solid var(--border); display: grid; grid-template-columns: repeat(4, 1fr); box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 999; padding-bottom: env(safe-area-inset-bottom); }
+        /* 100% 頂級置底不阻擋分頁導航欄 */
+        .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background: var(--card); border-top: 1px solid var(--border); display: grid; grid-template-columns: repeat(4, 1fr); box-shadow: 0 -2px 10px rgba(0,0,0,0.3); z-index: 999; padding-bottom: env(safe-area-inset-bottom); }
         .tab-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; color: var(--gray); font-weight: 500; height: 100%; cursor: pointer; }
         .tab-item.active { color: var(--primary); }
         .tab-icon { font-size: 20px; margin-bottom: 2px; }
@@ -78,7 +77,7 @@
         .page.active { display: block; }
         .total-header { font-size: 26px; font-weight: 700; color: var(--primary); text-align: center; margin: 12px 0; }
         .chart-row { display: flex; justify-content: space-between; margin-top: 14px; font-size: 14px; }
-        .chart-progress { height: 8px; background: var(--border); border-radius: 4px; margin-top: 4px; overflow: hidden; }
+        .chart-progress { height: 8px; background: #3a3a3c; border-radius: 4px; margin-top: 4px; overflow: hidden; }
         .chart-fill { height: 100%; background: var(--primary); border-radius: 4px; }
     </style>
 </head>
@@ -119,12 +118,12 @@
                 </div>
 
                 <div class="form-group" id="calendarWrapper">
-                    <label>輕點日曆選擇日子 (點第一下選中，再點一下取消)</label>
+                    <label>點選日曆選擇日子 (支援跨期跳選)</label>
                     <div class="calendar-picker">
                         <div class="cal-header">
-                            <button type="button" onclick="changeMonth(-1)" style="background:none;border:none;font-size:16px;padding:5px 15px;color:var(--primary); font-weight:bold;">◀</button>
-                            <span id="calMonthTitle">2026年03月</span>
-                            <button type="button" onclick="changeMonth(1)" style="background:none;border:none;font-size:16px;padding:5px 15px;color:var(--primary); font-weight:bold;">▶</button>
+                            <button type="button" class="cal-btn" onclick="changeMonth(-1)">◀</button>
+                            <span id="calMonthTitle">2026年09月</span>
+                            <button type="button" class="cal-btn" onclick="changeMonth(1)">▶</button>
                         </div>
                         <div class="cal-grid" id="calGrid"></div>
                     </div>
@@ -132,7 +131,7 @@
 
                 <div class="form-group">
                     <label>備註說明</label>
-                    <input type="text" id="note" placeholder="例如：次數套票、合租房租">
+                    <input type="text" id="note" placeholder="例如：合租房租、非連續次數套票">
                 </div>
 
                 <button type="submit" class="btn" id="submitBtn">➕ 加入帳目</button>
@@ -145,24 +144,9 @@
             <input type="month" id="globalMonth" onchange="renderAll()">
         </div>
 
-        <!-- 4個分頁區塊 -->
-        <div id="page1" class="page active">
-            <div id="rawFolderContainer"></div>
-        </div>
+        <!-- 四大分頁 -->
+        <div id="page1" class="page active"><div id="rawFolderContainer"></div></div>
+        <div id="page2" class="page"><div class="card"><h3>⏳ 未完全使用項目（等待補上日期）</h3><ul id="incompleteList" class="item-list"></ul></div></div>
+        <div id="page3" class="page"><div class="card"><h3>📅 實則每日消費支出</h3><ul id="dailySplitList" class="item-list"></ul></div></div>
+        <div id="page4" class="page"><div class="card"><h3>📊 當月真實均攤總開支</h3><div id="monthTotalAmount" class="total-header">$0.00</div><div id="chartSection"></div></div></div>
 
-        <div id="page2" class="page">
-            <div class="card">
-                <h3>⏳ 未完全使用項目（等待補上日期）</h3>
-                <ul id="incompleteList" class="item-list"></ul>
-            </div>
-        </div>
-
-        <div id="page3" class="page">
-            <div class="card">
-                <h3>📅 實則每日消費支出</h3>
-                <ul id="dailySplitList" class="item-list"></ul>
-            </div>
-        </div>
-
-        <div id="page4" class="page">
-            <div class="card">

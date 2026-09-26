@@ -15,23 +15,25 @@
             --accent: #ff9500;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg); color: var(--text); padding-bottom: 100px; min-height: 100vh; user-select: none; }
-        header { background: var(--card); padding: 16px; text-align: center; font-size: 18px; font-weight: 600; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 200; }
-        .container { padding: 16px; position: relative; z-index: 10; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg); color: var(--text); padding-bottom: 100px; min-height: 100vh; }
+        header { background: var(--card); padding: 16px; text-align: center; font-size: 18px; font-weight: 600; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .container { padding: 16px; }
         .card { background: var(--card); padding: 16px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         h3 { font-size: 16px; margin-bottom: 12px; }
         .form-group { margin-bottom: 12px; }
         label { display: block; font-size: 13px; color: var(--gray); margin-bottom: 4px; font-weight: 500; }
         input[type="number"], input[type="text"], select, input[type="month"] { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; background: #fafafa; }
         
-        /* 高級觸控滑動多選日曆 */
-        .calendar-picker { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: #fff; touch-action: none; }
+        /* 徹底修復的日曆佈局，確保 100% 顯示 */
+        .calendar-picker { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: #fff; }
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; font-size: 15px; }
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; position: relative; }
-        .cal-day-label { font-size: 12px; color: var(--gray); font-weight: bold; padding: 4px 0; pointer-events: none; }
-        .cal-day { font-size: 15px; padding: 10px 0; border-radius: 8px; background: #f2f2f7; font-weight: 500; color: var(--text); transition: background 0.1s; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+        .cal-day-label { font-size: 12px; color: var(--gray); font-weight: bold; padding: 4px 0; }
+        .cal-day { font-size: 15px; padding: 10px 0; border-radius: 8px; background: #f2f2f7; font-weight: 500; color: var(--text); cursor: pointer; }
+        
+        /* 點選後的亮藍色樣式 */
         .cal-day.selected { background-color: var(--primary) !important; color: #fff !important; font-weight: bold; }
-        .cal-day.empty { background: transparent; color: transparent; pointer-events: none; }
+        .cal-day.empty { background: transparent !important; color: transparent !important; cursor: default; }
         
         .toggle-group { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
         .switch { position: relative; display: inline-block; width: 51px; height: 31px; }
@@ -41,14 +43,18 @@
         input:checked + .slider { background-color: var(--primary); }
         input:checked + .slider:before { transform: translateX(20px); }
         
-        .btn { width: 100%; padding: 14px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; margin-top: 8px; }
+        .btn { width: 100%; padding: 14px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; margin-top: 8px; cursor: pointer; }
         .btn-cancel { background: var(--gray); margin-top: 4px; }
+        
+        /* 月份摺疊樣式 */
         .month-folder { margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-        .month-header { background: var(--card); padding: 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+        .month-header { background: var(--card); padding: 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .month-arrow { transition: transform 0.2s; color: var(--gray); }
         .month-folder.active .month-arrow { transform: rotate(180deg); }
         .month-content { display: none; background: var(--card); border-top: 1px solid var(--border); padding: 0 14px; }
         .month-folder.active .month-content { display: block; }
+        
+        /* 列表樣式 */
         .item-list { list-style: none; }
         .item-cell { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); }
         .item-cell:last-child { border-bottom: none; }
@@ -58,15 +64,15 @@
         .cell-right { display: flex; align-items: center; gap: 8px; }
         .cell-price { font-size: 16px; font-weight: 600; }
         
-        .edit-btn { background: #e3f2fd; border: none; color: var(--primary); font-size: 13px; font-weight: 500; padding: 6px 10px; border-radius: 6px; }
-        .del-btn { background: #ffebee; border: none; color: #ff3b30; font-size: 13px; font-weight: 500; padding: 6px 10px; border-radius: 6px; }
+        .edit-btn { background: #e3f2fd; border: none; color: var(--primary); font-size: 13px; font-weight: 500; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+        .del-btn { background: #ffebee; border: none; color: #ff3b30; font-size: 13px; font-weight: 500; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
         .badge { background: #ffe6c7; color: var(--accent); font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 6px; }
         
-        /* 徹底修復的手機底欄，防止點擊穿透 */
-        .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; background: var(--card); border-top: 1px solid var(--border); display: grid; grid-template-columns: repeat(4, 1fr); box-shadow: 0 -2px 10px rgba(0,0,0,0.08); z-index: 999; padding-bottom: env(safe-area-inset-bottom); }
-        .tab-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; color: var(--gray); font-weight: 500; -webkit-user-select: none; }
+        /* 徹底修復的固定底欄，防止點擊失效 */
+        .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background: var(--card); border-top: 1px solid var(--border); display: grid; grid-template-columns: repeat(4, 1fr); box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 999; padding-bottom: env(safe-area-inset-bottom); }
+        .tab-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; color: var(--gray); font-weight: 500; height: 100%; cursor: pointer; }
         .tab-item.active { color: var(--primary); }
-        .tab-icon { font-size: 22px; margin-bottom: 3px; pointer-events: none; }
+        .tab-icon { font-size: 20px; margin-bottom: 2px; }
         
         .page { display: none; }
         .page.active { display: block; }
@@ -77,15 +83,19 @@
     </style>
 </head>
 <body>
+
     <header id="appHeader">原始消費流水帳</header>
+
     <div class="container">
-        <div class="card" id="formCard">
+        <!-- 填寫表單 -->
+        <div class="card">
             <h3 id="formTitle">✏️ 記錄新時段開支</h3>
             <form id="expenseForm" onsubmit="saveExpense(event)">
                 <div class="form-group">
                     <label>消費金額 ($)</label>
                     <input type="number" id="amount" step="0.01" required placeholder="0.00" inputmode="decimal">
                 </div>
+                
                 <div class="form-group">
                     <label>消費分類</label>
                     <select id="category">
@@ -97,6 +107,7 @@
                         <option value="其他">📦 其他</option>
                     </select>
                 </div>
+
                 <div class="form-group">
                     <div class="toggle-group">
                         <label style="margin-bottom:0; font-size:14px; color:var(--text); font-weight:600;">⚠️ 標記為：未完全使用</label>
@@ -106,30 +117,52 @@
                         </label>
                     </div>
                 </div>
+
                 <div class="form-group" id="calendarWrapper">
-                    <label>滑動或輕點日曆選擇日子 (可跳選)</label>
-                    <div class="calendar-picker" id="touchCalendar">
+                    <label>輕點日曆選擇日子 (點第一下選中，再點一下取消)</label>
+                    <div class="calendar-picker">
                         <div class="cal-header">
-                            <button type="button" onclick="changeMonth(-1)" style="background:none;border:none;font-size:16px;padding:5px 15px;color:var(--primary);">◀</button>
+                            <button type="button" onclick="changeMonth(-1)" style="background:none;border:none;font-size:16px;padding:5px 15px;color:var(--primary); font-weight:bold;">◀</button>
                             <span id="calMonthTitle">2026年03月</span>
-                            <button type="button" onclick="changeMonth(1)" style="background:none;border:none;font-size:16px;padding:5px 15px;color:var(--primary);">▶</button>
+                            <button type="button" onclick="changeMonth(1)" style="background:none;border:none;font-size:16px;padding:5px 15px;color:var(--primary); font-weight:bold;">▶</button>
                         </div>
                         <div class="cal-grid" id="calGrid"></div>
                     </div>
                 </div>
+
                 <div class="form-group">
                     <label>備註說明</label>
                     <input type="text" id="note" placeholder="例如：次數套票、合租房租">
                 </div>
+
                 <button type="submit" class="btn" id="submitBtn">➕ 加入帳目</button>
                 <button type="button" class="btn btn-cancel" id="cancelEditBtn" style="display:none;" onclick="cancelEdit()">取消修改</button>
             </form>
         </div>
+
         <div class="form-group" style="margin: 20px 0;">
             <label>篩選查看月份（每日實則及總計）：</label>
             <input type="month" id="globalMonth" onchange="renderAll()">
         </div>
-        <div id="page1" class="page active"><div id="rawFolderContainer"></div></div>
-        <div id="page2" class="page"><div class="card"><h3>⏳ 未完全使用項目（等待補上日期）</h3><ul id="incompleteList" class="item-list"></ul></div></div>
-        <div id="page3" class="page"><div class="card"><h3>📅 實則每日消費支出</h3><ul id="dailySplitList" class="item-list"></ul></div></div>
-        <div id="page4" class="page"><div class="card"><h3>📊 當月真實均攤總開支</h3><div id="monthTotalAmount" class="total-header">$0.00</div><div id="chartSection"></div></div></div>
+
+        <!-- 4個分頁區塊 -->
+        <div id="page1" class="page active">
+            <div id="rawFolderContainer"></div>
+        </div>
+
+        <div id="page2" class="page">
+            <div class="card">
+                <h3>⏳ 未完全使用項目（等待補上日期）</h3>
+                <ul id="incompleteList" class="item-list"></ul>
+            </div>
+        </div>
+
+        <div id="page3" class="page">
+            <div class="card">
+                <h3>📅 實則每日消費支出</h3>
+                <ul id="dailySplitList" class="item-list"></ul>
+            </div>
+        </div>
+
+        <div id="page4" class="page">
+            <div class="card">

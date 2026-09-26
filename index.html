@@ -1,4 +1,3 @@
-Index
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
@@ -23,14 +22,8 @@ Index
         h3 { font-size: 16px; margin-bottom: 12px; }
         .form-group { margin-bottom: 12px; }
         label { display: block; font-size: 13px; color: var(--gray); margin-bottom: 4px; font-weight: 500; }
-        input[type="number"], input[type="text"], select, input[type="month"] { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; background: #fafafa; }
-        .calendar-picker { border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: #fff; }
-        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; font-size: 14px; }
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
-        .cal-day-label { font-size: 11px; color: var(--gray); font-weight: bold; padding: 4px 0; }
-        .cal-day { font-size: 14px; padding: 8px 0; border-radius: 6px; cursor: pointer; background: #f9f9f9; }
-        .cal-day.selected { background-color: var(--primary) !important; color: #fff !important; font-weight: bold; }
-        .cal-day.empty { background: transparent; cursor: default; }
+        input[type="number"], input[type="text"], select, input[type="month"], input[type="date"] { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; background: #fafafa; -webkit-appearance: none; }
+        .date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .toggle-group { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
         .switch { position: relative; display: inline-block; width: 51px; height: 31px; }
         .switch input { display: none; }
@@ -38,7 +31,7 @@ Index
         .slider:before { position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
         input:checked + .slider { background-color: var(--primary); }
         input:checked + .slider:before { transform: translateX(20px); }
-        .btn { width: 100%; padding: 14px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; margin-top: 8px; }
+        .btn { width: 100%; padding: 14px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; margin-top: 8px; cursor: pointer; }
         .btn-cancel { background: var(--gray); margin-top: 4px; }
         .month-folder { margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
         .month-header { background: var(--card); padding: 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
@@ -49,15 +42,16 @@ Index
         .item-list { list-style: none; }
         .item-cell { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); }
         .item-cell:last-child { border-bottom: none; }
-        .cell-left { flex: 1; }
+        .cell-left { flex: 1; padding-right: 8px; }
         .cell-title { font-size: 16px; font-weight: 500; }
         .cell-desc { font-size: 12px; color: var(--gray); margin-top: 2px; }
-        .cell-right { display: flex; align-items: center; gap: 12px; }
+        .cell-right { display: flex; align-items: center; gap: 8px; }
         .cell-price { font-size: 16px; font-weight: 600; }
-        .edit-btn { background: none; border: none; color: var(--primary); font-size: 14px; font-weight: 500; padding: 4px 8px; }
+        .edit-btn { background: #e3f2fd; border: none; color: var(--primary); font-size: 13px; font-weight: 500; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+        .del-btn { background: #ffebee; border: none; color: #ff3b30; font-size: 13px; font-weight: 500; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
         .badge { background: #ffe6c7; color: var(--accent); font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 6px; }
         .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background: var(--card); border-top: 1px solid var(--border); display: grid; grid-template-columns: repeat(4, 1fr); box-shadow: 0 -1px 5px rgba(0,0,0,0.05); z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
-        .tab-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; color: var(--gray); }
+        .tab-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; color: var(--gray); cursor: pointer; }
         .tab-item.active { color: var(--primary); }
         .tab-icon { font-size: 20px; margin-bottom: 2px; }
         .page { display: none; }
@@ -90,39 +84,40 @@ Index
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>選擇適用日期 (可跳著多選)</label>
-                    <div class="calendar-picker">
-                        <div class="cal-header">
-                            <span onclick="changeMonth(-1)" style="cursor:pointer; padding:0 10px;">◀</span>
-                            <span id="calMonthTitle">2026年03月</span>
-                            <span onclick="changeMonth(1)" style="cursor:pointer; padding:0 10px;">▶</span>
-                        </div>
-                        <div class="cal-grid" id="calGrid"></div>
-                    </div>
-                </div>
-                <div class="form-group">
                     <div class="toggle-group">
-                        <label style="margin-bottom:0; font-size:14px; color:var(--text);">⚠️ 標記為：未完全使用</label>
+                        <label style="margin-bottom:0; font-size:14px; color:var(--text); font-weight: 600;">⚠️ 標記為：未完全使用</label>
                         <label class="switch">
-                            <input type="checkbox" id="incompleteTag">
+                            <input type="checkbox" id="incompleteTag" onchange="toggleDateInputs()">
                             <span class="slider"></span>
                         </label>
                     </div>
                 </div>
                 <div class="form-group">
+                    <div class="date-row">
+                        <div>
+                            <label id="startLabel">開始日期</label>
+                            <input type="date" id="startDate" required onchange="syncDates()">
+                        </div>
+                        <div id="endDateBox">
+                            <label>結束日期</label>
+                            <input type="date" id="endDate" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label>備註說明</label>
-                    <input type="text" id="note" placeholder="例如：任選通行證、合租房租">
+                    <input type="text" id="note" placeholder="例如：月租、未定限期套票">
                 </div>
                 <button type="submit" class="btn" id="submitBtn">➕ 加入帳目</button>
                 <button type="button" class="btn btn-cancel" id="cancelEditBtn" style="display:none;" onclick="cancelEdit()">取消修改</button>
             </form>
         </div>
         <div class="form-group" style="margin: 20px 0;">
-            <label>篩選查看月份：</label>
+            <label>篩選查看月份（每日實則及總計）：</label>
             <input type="month" id="globalMonth" onchange="renderAll()">
         </div>
         <div id="page1" class="page active"><div id="rawFolderContainer"></div></div>
-        <div id="page2" class="page"><div class="card"><h3>⏳ 未完全使用項目清單</h3><ul id="incompleteList" class="item-list"></ul></div></div>
+        <div id="page2" class="page"><div class="card"><h3>⏳ 未完全使用項目（直到補上結束日期）</h3><ul id="incompleteList" class="item-list"></ul></div></div>
         <div id="page3" class="page"><div class="card"><h3>📅 實則每日消費支出</h3><ul id="dailySplitList" class="item-list"></ul></div></div>
         <div id="page4" class="page"><div class="card"><h3>📊 當月真實均攤總開支</h3><div id="monthTotalAmount" class="total-header">$0.00</div><div id="chartSection"></div></div></div>
         <div style="text-align:center; margin: 30px 0 10px 0;"><button onclick="clearSystemData()" style="background:none; border:none; color:var(--gray); text-decoration:underline; font-size:13px;">清除手機本地所有數據</button></div>
@@ -135,4 +130,16 @@ Index
     </div>
     <script>
         let db = JSON.parse(localStorage.getItem('time_ledger_data')) || [];
-        let editTargetId = null; let calYear = 2026; let calMonth = 2; let selectedDates = new Set();
+        let editTargetId = null;
+        const emojis = { '食飯': '🍔', '交通': '🚗', '娛樂': '🎮', '日常用品': '🧼', '租金': '🏠', '其他': '📦' };
+
+        window.onload = () => {
+            const todayStr = new Date().toISOString().substring(0,10);
+            document.getElementById('globalMonth').value = todayStr.substring(0,7);
+            document.getElementById('startDate').value = todayStr;
+            document.getElementById('endDate').value = todayStr;
+            toggleDateInputs();
+            renderAll();
+        };
+
+        function toggleDateInputs() {

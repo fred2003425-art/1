@@ -13,13 +13,15 @@
       --text-secondary: #8e8e93;
       --border: #e5e5ea;
       --danger: #ff3b30;
+      --selected-bg: #007aff;
+      --range-bg: #cce4ff;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { background-color: var(--bg); color: var(--text); padding-bottom: 80px; }
+    body { background-color: var(--bg); color: var(--text); padding-bottom: 80px; user-select: none; -webkit-user-select: none; }
 
     /* Header */
-    header { background: var(--card-bg); padding: 16px; text-align: center; font-weight: 600; font-size: 18px; border-bottom: 1px solid var(--border); sticky; top: 0; z-index: 10; }
+    header { background: var(--card-bg); padding: 16px; text-align: center; font-weight: 600; font-size: 18px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
 
     /* Main Container */
     .container { max-width: 600px; margin: 0 auto; padding: 16px; }
@@ -39,12 +41,17 @@
     input:checked + .slider { background-color: var(--primary); }
     input:checked + .slider:before { transform: translateX(20px); }
 
-    /* Calendar Picker */
+    /* Calendar Picker with Drag Selection */
     .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; }
-    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; touch-action: none; }
     .day-name { font-size: 12px; color: var(--text-secondary); padding-bottom: 4px; }
-    .day-btn { aspect-ratio: 1; border-radius: 50%; border: none; background: transparent; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin: auto; width: 36px; height: 36px; }
-    .day-btn.selected { background-color: var(--primary); color: white; font-weight: bold; }
+    .day-btn { 
+      aspect-ratio: 1; border-radius: 50%; border: none; background: transparent; font-size: 14px; 
+      cursor: pointer; display: flex; align-items: center; justify-content: center; margin: auto; 
+      width: 36px; height: 36px; transition: background-color 0.1s, color 0.1s;
+    }
+    .day-btn.selected { background-color: var(--selected-bg); color: white; font-weight: bold; }
+    .day-btn.in-drag-range { background-color: var(--range-bg); color: var(--primary); font-weight: bold; }
     .day-btn.empty { visibility: hidden; }
 
     .btn { width: 100%; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
@@ -55,7 +62,7 @@
     .page.active { display: block; }
 
     /* Collapsible Group */
-    .group-header { background: #e5e5ea; padding: 10px 14px; border-radius: 8px; margin-top: 12px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; }
+    .group-header { background: #e5e5ea; padding: 10px 14px; border-radius: 8px; margin-top: 12px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
     .group-content { margin-bottom: 10px; }
 
     /* List Items */
@@ -109,12 +116,12 @@
         </label>
       </div>
 
-      <!-- 實體互動日曆 -->
+      <!-- 實體互動日曆（支援點選與拖拉連選） -->
       <div id="calendar-area" style="margin-top: 12px;">
         <div class="calendar-header">
-          <button onclick="changeMonth(-1)" style="border:none; background:none; cursor:pointer;">◀</button>
+          <button onclick="changeMonth(-1)" style="border:none; background:none; cursor:pointer; font-size:16px;">◀</button>
           <span id="calendar-month-year">2026 年 9 月</span>
-          <button onclick="changeMonth(1)" style="border:none; background:none; cursor:pointer;">▶</button>
+          <button onclick="changeMonth(1)" style="border:none; background:none; cursor:pointer; font-size:16px;">▶</button>
         </div>
         <div class="calendar-grid">
           <div class="day-name">日</div><div class="day-name">一</div><div class="day-name">二</div>
@@ -122,6 +129,7 @@
         </div>
         <div class="calendar-grid" id="calendar-days"></div>
         <p style="font-size: 12px; color: var(--text-secondary); margin-top: 8px; text-align: center;">
+          💡 支援滑動/拖拉連選日期<br>
           已選 <b id="selected-count" style="color:var(--primary);">0</b> 天，每日均攤: <b id="split-amount">$0.00</b>
         </p>
       </div>
@@ -140,7 +148,7 @@
       <div id="incomplete-list"></div>
     </div>
 
-    <!-- 頁面 3: 每日實則 -->
+    <!-- 頁面 3: 每日實則（按月分類收納） -->
     <div id="page3" class="page">
       <div id="daily-list"></div>
     </div>
@@ -172,25 +180,29 @@
   </nav>
 
   <script>
-    // 資料結構與全域狀態
+    // 全域數據與狀態
     let records = JSON.parse(localStorage.getItem('expense_records') || '[]');
     let currentEditingId = null;
     let currentDate = new Date();
-    let selectedDates = new Set(); // 儲存格式: "YYYY-MM-DD"
+    let selectedDates = new Set(); // YYYY-MM-DD
 
-    // 初始化
+    // 拖拉選取 (Drag to select) 變數
+    let isDragging = false;
+    let dragStartDay = null;
+    let dragCurrentDay = null;
+
     window.onload = () => {
+      setupDragEvents();
       renderCalendar();
       renderAllPages();
     };
 
-    // 儲存至 LocalStorage
     function saveData() {
       localStorage.setItem('expense_records', JSON.stringify(records));
       renderAllPages();
     }
 
-    // 1. 日曆邏輯與跳點選擇
+    // 1. 日曆渲染與拖拉選取引擎
     function renderCalendar() {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
@@ -201,32 +213,111 @@
       const grid = document.getElementById('calendar-days');
       grid.innerHTML = '';
 
-      // 補空白格
+      // 補前置空白
       for (let i = 0; i < firstDay; i++) {
         const empty = document.createElement('div');
         empty.className = 'day-btn empty';
         grid.appendChild(empty);
       }
 
-      // 渲染日期按鈕
+      // 渲染各天
       for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const btn = document.createElement('button');
-        btn.className = `day-btn ${selectedDates.has(dateStr) ? 'selected' : ''}`;
+        btn.className = 'day-btn';
+        btn.dataset.day = day;
+        btn.dataset.date = dateStr;
         btn.innerText = day;
-        btn.onclick = () => toggleDateSelection(dateStr);
+
+        if (selectedDates.has(dateStr)) {
+          btn.classList.add('selected');
+        }
+
         grid.appendChild(btn);
       }
       updateSplitCalculation();
     }
 
-    function toggleDateSelection(dateStr) {
-      if (selectedDates.has(dateStr)) {
-        selectedDates.delete(dateStr);
-      } else {
-        selectedDates.add(dateStr);
-      }
-      renderCalendar();
+    // 滑鼠/觸控 拖拉選取監聽器
+    function setupDragEvents() {
+      const grid = document.getElementById('calendar-days');
+
+      const getDayFromElement = (el) => {
+        const btn = el.closest('.day-btn:not(.empty)');
+        return btn ? parseInt(btn.dataset.day) : null;
+      };
+
+      const startDrag = (e) => {
+        const target = e.touches ? document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY) : e.target;
+        const day = getDayFromElement(target);
+        if (day !== null) {
+          isDragging = true;
+          dragStartDay = day;
+          dragCurrentDay = day;
+          highlightDragRange();
+        }
+      };
+
+      const moveDrag = (e) => {
+        if (!isDragging) return;
+        const target = e.touches ? document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY) : e.target;
+        const day = getDayFromElement(target);
+        if (day !== null && day !== dragCurrentDay) {
+          dragCurrentDay = day;
+          highlightDragRange();
+        }
+      };
+
+      const endDrag = () => {
+        if (!isDragging) return;
+        isDragging = false;
+        
+        // 將拖拉範圍內的日期加進 selectedDates
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const start = Math.min(dragStartDay, dragCurrentDay);
+        const end = Math.max(dragStartDay, dragCurrentDay);
+
+        for (let d = start; d <= end; d++) {
+          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          if (start === end) {
+            // 單點：Toggle 切換
+            if (selectedDates.has(dateStr)) selectedDates.delete(dateStr);
+            else selectedDates.add(dateStr);
+          } else {
+            // 拖拉：一律加入
+            selectedDates.add(dateStr);
+          }
+        }
+
+        dragStartDay = null;
+        dragCurrentDay = null;
+        renderCalendar();
+      };
+
+      grid.addEventListener('mousedown', startDrag);
+      grid.addEventListener('mousemove', moveDrag);
+      window.addEventListener('mouseup', endDrag);
+
+      grid.addEventListener('touchstart', startDrag, { passive: true });
+      grid.addEventListener('touchmove', moveDrag, { passive: true });
+      window.addEventListener('touchend', endDrag);
+    }
+
+    // 拖拉過程中的視覺高亮顯示
+    function highlightDragRange() {
+      if (dragStartDay === null || dragCurrentDay === null) return;
+      const start = Math.min(dragStartDay, dragCurrentDay);
+      const end = Math.max(dragStartDay, dragCurrentDay);
+
+      document.querySelectorAll('#calendar-days .day-btn:not(.empty)').forEach(btn => {
+        const day = parseInt(btn.dataset.day);
+        if (day >= start && day <= end) {
+          btn.classList.add('in-drag-range');
+        } else {
+          btn.classList.remove('in-drag-range');
+        }
+      });
     }
 
     function changeMonth(delta) {
@@ -245,11 +336,10 @@
     document.getElementById('item-amount').addEventListener('input', updateSplitCalculation);
 
     function toggleIncomplete(isIncomplete) {
-      const calArea = document.getElementById('calendar-area');
-      calArea.style.display = isIncomplete ? 'none' : 'block';
+      document.getElementById('calendar-area').style.display = isIncomplete ? 'none' : 'block';
     }
 
-    // 2. 新增 / 編輯帳目
+    // 2. 帳目新增與編輯
     function saveRecord() {
       const name = document.getElementById('item-name').value.trim();
       const amount = parseFloat(document.getElementById('item-amount').value);
@@ -262,34 +352,24 @@
       }
 
       if (!isIncomplete && selectedDates.size === 0) {
-        alert('請至少在日曆上點選一天，或勾選「未完全使用」！');
+        alert('請至少在日曆上選取一天，或勾選「未完全使用」！');
         return;
       }
 
       const today = new Date().toISOString().split('T')[0];
 
       if (currentEditingId) {
-        // 編輯狀態
         records = records.map(r => r.id === currentEditingId ? {
-          ...r,
-          name,
-          amount,
-          category,
-          isIncomplete,
+          ...r, name, amount, category, isIncomplete,
           dates: isIncomplete ? [] : Array.from(selectedDates).sort()
         } : r);
       } else {
-        // 新增狀態
-        const newRecord = {
+        records.push({
           id: Date.now().toString(),
-          name,
-          amount,
-          category,
-          isIncomplete,
+          name, amount, category, isIncomplete,
           createdDate: today,
           dates: isIncomplete ? [] : Array.from(selectedDates).sort()
-        };
-        records.push(newRecord);
+        });
       }
 
       saveData();
@@ -343,7 +423,7 @@
       renderPage4();
     }
 
-    // 頁面 1: 原始記錄（按年月摺疊）
+    // 頁面 1: 原始記錄（按月收納）
     function renderPage1() {
       const container = document.getElementById('raw-list');
       container.innerHTML = '';
@@ -353,10 +433,9 @@
         return;
       }
 
-      // 按年月分組
       const groups = {};
       records.forEach(r => {
-        const key = r.createdDate.substring(0, 7); // YYYY-MM
+        const key = r.createdDate.substring(0, 7);
         if (!groups[key]) groups[key] = [];
         groups[key].push(r);
       });
@@ -365,7 +444,7 @@
         const groupEl = document.createElement('div');
         const header = document.createElement('div');
         header.className = 'group-header';
-        header.innerHTML = `<span>📅 ${monthKey}</span> <span>▽/▲ (${groups[monthKey].length} 筆)</span>`;
+        header.innerHTML = `<span>📅 ${monthKey} 帳目</span> <span>▽/▲ (${groups[monthKey].length} 筆)</span>`;
         
         const content = document.createElement('div');
         content.className = 'group-content';
@@ -397,7 +476,7 @@
       });
     }
 
-    // 頁面 2: 未完全使用項目 (無餘額顯示，僅項目與記錄日)
+    // 頁面 2: 未完項目
     function renderPage2() {
       const container = document.getElementById('incomplete-list');
       container.innerHTML = '';
@@ -425,71 +504,105 @@
       });
     }
 
-    // 頁面 3: 每日實則（僅顯示被分攤日子的實質開銷）
+    // 頁面 3: 每日實則（核心修改：按月份 YYYY-MM 分組收納）
     function renderPage3() {
       const container = document.getElementById('daily-list');
       container.innerHTML = '';
 
-      const dailyMap = {}; // { "YYYY-MM-DD": [ { name, category, dailyAmount } ] }
+      // { "2026-09": { "2026-09-01": [ { name, category, dailyAmount } ] } }
+      const monthMap = {};
 
       records.forEach(r => {
         if (!r.isIncomplete && r.dates && r.dates.length > 0) {
           const dailyAmount = r.amount / r.dates.length;
           r.dates.forEach(d => {
-            if (!dailyMap[d]) dailyMap[d] = [];
-            dailyMap[d].push({ name: r.name, category: r.category, dailyAmount });
+            const monthKey = d.substring(0, 7); // YYYY-MM
+            if (!monthMap[monthKey]) monthMap[monthKey] = {};
+            if (!monthMap[monthKey][d]) monthMap[monthKey][d] = [];
+            
+            monthMap[monthKey][d].push({ name: r.name, category: r.category, dailyAmount });
           });
         }
       });
 
-      const sortedDates = Object.keys(dailyMap).sort().reverse();
+      const sortedMonths = Object.keys(monthMap).sort().reverse();
 
-      if (sortedDates.length === 0) {
+      if (sortedMonths.length === 0) {
         container.innerHTML = '<p style="text-align:center; color:var(--text-secondary); margin-top:20px;">尚無已被分攤的每日開銷</p>';
         return;
       }
 
-      sortedDates.forEach(date => {
-        const items = dailyMap[date];
-        const dayTotal = items.reduce((sum, item) => sum + item.dailyAmount, 0);
+      sortedMonths.forEach(monthKey => {
+        const datesMap = monthMap[monthKey];
+        const sortedDates = Object.keys(datesMap).sort().reverse();
 
-        const groupEl = document.createElement('div');
-        const header = document.createElement('div');
-        header.className = 'group-header';
-        header.style.background = '#e1f0ff';
-        header.innerHTML = `<span>🔵 ${date}</span> <span>實則支出: $${dayTotal.toFixed(2)}</span>`;
-
-        const content = document.createElement('div');
-        items.forEach(item => {
-          const el = document.createElement('div');
-          el.className = 'item-card';
-          el.innerHTML = `
-            <div>
-              <div class="item-title">${item.category} ${item.name}</div>
-              <div class="item-sub">當日均攤額</div>
-            </div>
-            <div class="item-amount">$${item.dailyAmount.toFixed(2)}</div>
-          `;
-          content.appendChild(el);
+        // 計算該月份總實則金額
+        let monthTotal = 0;
+        sortedDates.forEach(d => {
+          datesMap[d].forEach(item => monthTotal += item.dailyAmount);
         });
 
-        groupEl.appendChild(header);
-        groupEl.appendChild(content);
-        container.appendChild(groupEl);
+        // 月份收納外框
+        const monthGroupEl = document.createElement('div');
+        const monthHeader = document.createElement('div');
+        monthHeader.className = 'group-header';
+        monthHeader.style.background = '#007aff';
+        monthHeader.style.color = '#ffffff';
+        monthHeader.innerHTML = `<span>🗓️ ${monthKey} 實則支出</span> <span>總計: $${monthTotal.toFixed(2)} ▽/▲</span>`;
+
+        const monthContent = document.createElement('div');
+        monthContent.className = 'group-content';
+
+        monthHeader.onclick = () => {
+          monthContent.style.display = monthContent.style.display === 'none' ? 'block' : 'none';
+        };
+
+        // 月份內部的每一天
+        sortedDates.forEach(date => {
+          const items = datesMap[date];
+          const dayTotal = items.reduce((sum, item) => sum + item.dailyAmount, 0);
+
+          const dayCard = document.createElement('div');
+          dayCard.style.cssText = 'margin-top: 8px; border-left: 3px solid var(--primary); padding-left: 8px;';
+
+          const dayHeader = document.createElement('div');
+          dayHeader.style.cssText = 'font-weight:bold; font-size:13px; color:var(--text-secondary); margin-top:6px; display:flex; justify-content:space-between;';
+          dayHeader.innerHTML = `<span>🔵 ${date}</span> <span>$${dayTotal.toFixed(2)}</span>`;
+          dayCard.appendChild(dayHeader);
+
+          items.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'item-card';
+            el.style.marginTop = '4px';
+            el.innerHTML = `
+              <div>
+                <div class="item-title">${item.category} ${item.name}</div>
+                <div class="item-sub">當日均攤額</div>
+              </div>
+              <div class="item-amount">$${item.dailyAmount.toFixed(2)}</div>
+            `;
+            dayCard.appendChild(el);
+          });
+
+          monthContent.appendChild(dayCard);
+        });
+
+        monthGroupEl.appendChild(monthHeader);
+        monthGroupEl.appendChild(monthContent);
+        container.appendChild(monthGroupEl);
       });
     }
 
-    // 頁面 4: 當月總計（按分類統計）
+    // 頁面 4: 當月總計
     function renderPage4() {
       const container = document.getElementById('monthly-summary');
       container.innerHTML = '';
 
-      const currentMonthKey = new Date().toISOString().substring(0, 7); // 當前年月 YYYY-MM
+      const currentMonthKey = new Date().toISOString().substring(0, 7);
       const catTotals = {};
       let totalSum = 0;
 
       records.forEach(r => {
-        // 以記錄日為當月統計依據
         if (r.createdDate.startsWith(currentMonthKey)) {
           catTotals[r.category] = (catTotals[r.category] || 0) + r.amount;
           totalSum += r.amount;
@@ -523,17 +636,14 @@
     function switchTab(tabIndex, title) {
       document.getElementById('page-title').innerText = title;
       
-      // 更新 Tab 樣式
       document.querySelectorAll('.tab-item').forEach((btn, idx) => {
         btn.classList.toggle('active', idx === tabIndex - 1);
       });
 
-      // 切換 View
       document.querySelectorAll('.page').forEach((page, idx) => {
         page.classList.toggle('active', idx === tabIndex - 1);
       });
 
-      // 只有頁面1顯示頂部輸入卡片，其他頁面隱藏以保持畫面潔淨
       document.getElementById('form-card').style.display = (tabIndex === 1) ? 'block' : 'none';
     }
   </script>

@@ -1,152 +1,541 @@
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>時段記帳 App</title>
-    <style>
-        :root {
-            --bg: #1c1c1e; /* Apple 日曆經典深黑 */
-            --card: #2c2c2e; /* 網格背景深灰 */
-            --primary: #0a84ff; /* 亮藍色 */
-            --text: #ffffff; /* 純白文字 */
-            --gray: #aeaeb2;
-            --border: #3a3a3c;
-            --accent: #ff9f0a;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg); color: var(--text); padding-bottom: 100px; min-height: 100vh; }
-        header { background: var(--card); padding: 16px; text-align: center; font-size: 18px; font-weight: 600; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; color: var(--text); }
-        .container { padding: 16px; }
-        .card { background: var(--card); padding: 16px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
-        h3 { font-size: 16px; margin-bottom: 12px; color: var(--text); }
-        .form-group { margin-bottom: 14px; }
-        label { display: block; font-size: 13px; color: var(--gray); margin-bottom: 6px; font-weight: 500; }
-        input[type="number"], input[type="text"], select, input[type="month"] { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; background: #1c1c1e; color: #fff; -webkit-appearance: none; }
-        
-        /* 仿 Apple 原生配置的日曆網格 */
-        .calendar-picker { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--card); }
-        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-weight: bold; font-size: 16px; }
-        .cal-btn { background: none; border: none; font-size: 18px; padding: 5px 15px; color: var(--primary); font-weight: bold; cursor: pointer; }
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center; }
-        .cal-day-label { font-size: 12px; color: var(--gray); font-weight: 600; padding: 4px 0; }
-        .cal-day { font-size: 15px; padding: 10px 0; border-radius: 50%; background: transparent; font-weight: 500; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; aspect-ratio: 1; }
-        
-        /* 選中日期後的正圓形高亮藍點 🔵 */
-        .cal-day.selected { background-color: var(--primary) !important; color: #fff !important; font-weight: bold; }
-        .cal-day.empty { cursor: default; }
-        
-        .toggle-group { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
-        .switch { position: relative; display: inline-block; width: 51px; height: 31px; }
-        .switch input { display: none; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #3a3a3c; transition: .3s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--primary); }
-        input:checked + .slider:before { transform: translateX(20px); }
-        
-        .btn { width: 100%; padding: 14px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; margin-top: 8px; cursor: pointer; }
-        .btn-cancel { background: #48484a; margin-top: 4px; }
-        
-        .month-folder { margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-        .month-header { background: var(--card); padding: 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-        .month-arrow { transition: transform 0.2s; color: var(--gray); }
-        .month-folder.active .month-arrow { transform: rotate(180deg); }
-        .month-content { display: none; background: var(--card); border-top: 1px solid var(--border); padding: 0 14px; }
-        .month-folder.active .month-content { display: block; }
-        
-        .item-list { list-style: none; }
-        .item-cell { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); }
-        .item-cell:last-child { border-bottom: none; }
-        .cell-left { flex: 1; padding-right: 8px; }
-        .cell-title { font-size: 16px; font-weight: 500; }
-        .cell-desc { font-size: 12px; color: var(--gray); margin-top: 2px; }
-        .cell-right { display: flex; align-items: center; gap: 8px; }
-        .cell-price { font-size: 16px; font-weight: 600; }
-        
-        .edit-btn { background: #3a3a3c; border: none; color: var(--primary); font-size: 13px; font-weight: 500; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
-        .del-btn { background: #3a3a3c; border: none; color: #ff453a; font-size: 13px; font-weight: 500; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
-        .badge { background: #3a3a3c; color: var(--accent); font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 6px; }
-        
-        /* 固定底欄導航欄（絕對顯示且防點擊阻擋） */
-        .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background: var(--card); border-top: 1px solid var(--border); display: grid; grid-template-columns: repeat(4, 1fr); box-shadow: 0 -2px 10px rgba(0,0,0,0.3); z-index: 999; padding-bottom: env(safe-area-inset-bottom); }
-        .tab-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; color: var(--gray); font-weight: 500; height: 100%; cursor: pointer; }
-        .tab-item.active { color: var(--primary); }
-        .tab-icon { font-size: 20px; margin-bottom: 2px; }
-        
-        .page { display: none; }
-        .page.active { display: block; }
-        .total-header { font-size: 26px; font-weight: 700; color: var(--primary); text-align: center; margin: 12px 0; }
-        .chart-row { display: flex; justify-content: space-between; margin-top: 14px; font-size: 14px; }
-        .chart-progress { height: 8px; background: #3a3a3c; border-radius: 4px; margin-top: 4px; overflow: hidden; }
-        .chart-fill { height: 100%; background: var(--primary); border-radius: 4px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>智能分攤記帳</title>
+  <style>
+    :root {
+      --primary: #007aff;
+      --bg: #f2f2f7;
+      --card-bg: #ffffff;
+      --text: #000000;
+      --text-secondary: #8e8e93;
+      --border: #e5e5ea;
+      --danger: #ff3b30;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: var(--bg); color: var(--text); padding-bottom: 80px; }
+
+    /* Header */
+    header { background: var(--card-bg); padding: 16px; text-align: center; font-weight: 600; font-size: 18px; border-bottom: 1px solid var(--border); sticky; top: 0; z-index: 10; }
+
+    /* Main Container */
+    .container { max-width: 600px; margin: 0 auto; padding: 16px; }
+
+    /* Form Styles */
+    .card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
+    input, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; background: #f9f9f9; outline: none; }
+    input:focus, select:focus { border-color: var(--primary); background: #fff; }
+
+    .switch-container { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
+    .switch { position: relative; display: inline-block; width: 51px; height: 31px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e9e9ea; transition: .4s; border-radius: 31px; }
+    .slider:before { position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    input:checked + .slider { background-color: var(--primary); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    /* Calendar Picker */
+    .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+    .day-name { font-size: 12px; color: var(--text-secondary); padding-bottom: 4px; }
+    .day-btn { aspect-ratio: 1; border-radius: 50%; border: none; background: transparent; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin: auto; width: 36px; height: 36px; }
+    .day-btn.selected { background-color: var(--primary); color: white; font-weight: bold; }
+    .day-btn.empty { visibility: hidden; }
+
+    .btn { width: 100%; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+    .btn:active { opacity: 0.8; }
+
+    /* Page Views */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* Collapsible Group */
+    .group-header { background: #e5e5ea; padding: 10px 14px; border-radius: 8px; margin-top: 12px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; }
+    .group-content { margin-bottom: 10px; }
+
+    /* List Items */
+    .item-card { background: var(--card-bg); border-radius: 10px; padding: 12px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+    .item-title { font-weight: 600; font-size: 15px; }
+    .item-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+    .item-amount { font-weight: bold; font-size: 16px; text-align: right; }
+    .item-actions { display: flex; gap: 8px; margin-top: 6px; }
+    .action-btn { background: none; border: none; font-size: 13px; color: var(--primary); cursor: pointer; }
+    .action-btn.del { color: var(--danger); }
+
+    /* Bottom Tab Nav */
+    .bottom-tab { position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 100; }
+    .tab-item { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: var(--text-secondary); border: none; background: none; cursor: pointer; width: 25%; }
+    .tab-item .icon { font-size: 20px; margin-bottom: 2px; }
+    .tab-item.active { color: var(--primary); font-weight: 600; }
+  </style>
 </head>
 <body>
 
-    <header id="appHeader">原始消費流水帳</header>
+  <header id="page-title">1. 原始記錄</header>
 
-    <div class="container">
-        <!-- 輸入區塊 -->
-        <div class="card">
-            <h3 id="formTitle">✏️ 記錄新時段開支</h3>
-            <form id="expenseForm" onsubmit="saveExpense(event)">
-                <div class="form-group">
-                    <label>消費金額 ($)</label>
-                    <input type="number" id="amount" step="0.01" required placeholder="0.00" inputmode="decimal">
-                </div>
-                
-                <div class="form-group">
-                    <label>消費分類</label>
-                    <select id="category">
-                        <option value="食飯">🍔 食飯</option>
-                        <option value="交通">🚗 交通</option>
-                        <option value="娛樂">🎮 娛樂</option>
-                        <option value="日常用品">🧼 日常用品</option>
-                        <option value="租金">🏠 租金</option>
-                        <option value="其他">📦 其他</option>
-                    </select>
-                </div>
+  <div class="container">
+    <!-- 記帳表單區域 (僅在頁面1與編輯時顯示) -->
+    <div class="card" id="form-card">
+      <div class="form-group">
+        <label>項目名稱</label>
+        <input type="text" id="item-name" placeholder="例如：Netflix 訂閱、超市採買">
+      </div>
+      <div class="form-group">
+        <label>總金額 ($)</label>
+        <input type="number" id="item-amount" placeholder="0.00" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>消費分類</label>
+        <select id="item-category">
+          <option value="🍔 食飯">🍔 食飯</option>
+          <option value="🚗 交通">🚗 交通</option>
+          <option value="🎮 娛樂">🎮 娛樂</option>
+          <option value="🧼 日用">🧼 日常用品</option>
+          <option value="🏠 租金">🏠 租金</option>
+          <option value="📦 其他" selected>📦 其他</option>
+        </select>
+      </div>
 
-                <div class="form-group">
-                    <div class="toggle-group">
-                        <label style="margin-bottom:0; font-size:14px; color:var(--text); font-weight:600;">⚠️ 標記為：未完全使用</label>
-                        <label class="switch">
-                            <input type="checkbox" id="incompleteTag" onchange="toggleCalendarView()">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
+      <div class="switch-container">
+        <span>標記為：未完全使用</span>
+        <label class="switch">
+          <input type="checkbox" id="item-incomplete" onchange="toggleIncomplete(this.checked)">
+          <span class="slider"></span>
+        </label>
+      </div>
 
-                <div class="form-group" id="calendarWrapper">
-                    <label>點選日曆選擇日子 (支援跨期跳選)</label>
-                    <div class="calendar-picker">
-                        <div class="cal-header">
-                            <button type="button" class="cal-btn" onclick="changeMonth(-1)">◀</button>
-                            <span id="calMonthTitle">2026年09月</span>
-                            <button type="button" class="cal-btn" onclick="changeMonth(1)">▶</button>
-                        </div>
-                        <div class="cal-grid" id="calGrid"></div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>備註說明</label>
-                    <input type="text" id="note" placeholder="例如：合租房租、非連續次數套票">
-                </div>
-
-                <button type="submit" class="btn" id="submitBtn">➕ 加入帳目</button>
-                <button type="button" class="btn btn-cancel" id="cancelEditBtn" style="display:none;" onclick="cancelEdit()">取消修改</button>
-            </form>
+      <!-- 實體互動日曆 -->
+      <div id="calendar-area" style="margin-top: 12px;">
+        <div class="calendar-header">
+          <button onclick="changeMonth(-1)" style="border:none; background:none; cursor:pointer;">◀</button>
+          <span id="calendar-month-year">2026 年 9 月</span>
+          <button onclick="changeMonth(1)" style="border:none; background:none; cursor:pointer;">▶</button>
         </div>
-
-        <div class="form-group" style="margin: 20px 0;">
-            <label>篩選查看月份（每日實則及總計）：</label>
-            <input type="month" id="globalMonth" onchange="renderAll()">
+        <div class="calendar-grid">
+          <div class="day-name">日</div><div class="day-name">一</div><div class="day-name">二</div>
+          <div class="day-name">三</div><div class="day-name">四</div><div class="day-name">五</div><div class="day-name">六</div>
         </div>
+        <div class="calendar-grid" id="calendar-days"></div>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 8px; text-align: center;">
+          已選 <b id="selected-count" style="color:var(--primary);">0</b> 天，每日均攤: <b id="split-amount">$0.00</b>
+        </p>
+      </div>
 
-        <!-- 四大分頁面板 -->
-        <div id="page1" class="page active"><div id="rawFolderContainer"></div></div>
-        <div id="page2" class="page"><div class="card"><h3>⏳ 未完全使用項目（等待補上日期）</h3><ul id="incompleteList" class="item-list"></ul></div></div>
-        <div id="page3" class="page"><div class="card"><h3>📅 實則每日消費支出</h3><ul id="dailySplitList" class="item-list"></ul></div></div>
-        <div id="page4" class="page"><div class="card"><h3>📊 當月真實均攤總開支</h3><div id="monthTotalAmount" class="total-header">$0.00</div><div id="chartSection"></div></div></div>
+      <button class="btn" id="submit-btn" onclick="saveRecord()">加入帳目</button>
+      <button class="btn" id="cancel-edit-btn" onclick="resetForm()" style="background:#8e8e93; display:none; margin-top:6px;">取消編輯</button>
+    </div>
 
+    <!-- 頁面 1: 原始記錄 -->
+    <div id="page1" class="page active">
+      <div id="raw-list"></div>
+    </div>
+
+    <!-- 頁面 2: 未完項目 -->
+    <div id="page2" class="page">
+      <div id="incomplete-list"></div>
+    </div>
+
+    <!-- 頁面 3: 每日實則 -->
+    <div id="page3" class="page">
+      <div id="daily-list"></div>
+    </div>
+
+    <!-- 頁面 4: 當月總計 -->
+    <div id="page4" class="page">
+      <div id="monthly-summary"></div>
+    </div>
+  </div>
+
+  <!-- 底部 4 個頁面切換按鈕 -->
+  <nav class="bottom-tab">
+    <button class="tab-item active" onclick="switchTab(1, '1. 原始記錄')">
+      <span class="icon">📝</span>
+      <span>原始記錄</span>
+    </button>
+    <button class="tab-item" onclick="switchTab(2, '2. 未完全使用項目')">
+      <span class="icon">⏳</span>
+      <span>未完項目</span>
+    </button>
+    <button class="tab-item" onclick="switchTab(3, '3. 每日實則')">
+      <span class="icon">📅</span>
+      <span>每日實則</span>
+    </button>
+    <button class="tab-item" onclick="switchTab(4, '4. 當月總計')">
+      <span class="icon">📊</span>
+      <span>當月總計</span>
+    </button>
+  </nav>
+
+  <script>
+    // 資料結構與全域狀態
+    let records = JSON.parse(localStorage.getItem('expense_records') || '[]');
+    let currentEditingId = null;
+    let currentDate = new Date();
+    let selectedDates = new Set(); // 儲存格式: "YYYY-MM-DD"
+
+    // 初始化
+    window.onload = () => {
+      renderCalendar();
+      renderAllPages();
+    };
+
+    // 儲存至 LocalStorage
+    function saveData() {
+      localStorage.setItem('expense_records', JSON.stringify(records));
+      renderAllPages();
+    }
+
+    // 1. 日曆邏輯與跳點選擇
+    function renderCalendar() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      document.getElementById('calendar-month-year').innerText = `${year} 年 ${month + 1} 月`;
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const grid = document.getElementById('calendar-days');
+      grid.innerHTML = '';
+
+      // 補空白格
+      for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'day-btn empty';
+        grid.appendChild(empty);
+      }
+
+      // 渲染日期按鈕
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const btn = document.createElement('button');
+        btn.className = `day-btn ${selectedDates.has(dateStr) ? 'selected' : ''}`;
+        btn.innerText = day;
+        btn.onclick = () => toggleDateSelection(dateStr);
+        grid.appendChild(btn);
+      }
+      updateSplitCalculation();
+    }
+
+    function toggleDateSelection(dateStr) {
+      if (selectedDates.has(dateStr)) {
+        selectedDates.delete(dateStr);
+      } else {
+        selectedDates.add(dateStr);
+      }
+      renderCalendar();
+    }
+
+    function changeMonth(delta) {
+      currentDate.setMonth(currentDate.getMonth() + delta);
+      renderCalendar();
+    }
+
+    function updateSplitCalculation() {
+      const amount = parseFloat(document.getElementById('item-amount').value) || 0;
+      const count = selectedDates.size;
+      document.getElementById('selected-count').innerText = count;
+      const split = count > 0 ? (amount / count).toFixed(2) : '0.00';
+      document.getElementById('split-amount').innerText = `$${split}`;
+    }
+
+    document.getElementById('item-amount').addEventListener('input', updateSplitCalculation);
+
+    function toggleIncomplete(isIncomplete) {
+      const calArea = document.getElementById('calendar-area');
+      calArea.style.display = isIncomplete ? 'none' : 'block';
+    }
+
+    // 2. 新增 / 編輯帳目
+    function saveRecord() {
+      const name = document.getElementById('item-name').value.trim();
+      const amount = parseFloat(document.getElementById('item-amount').value);
+      const category = document.getElementById('item-category').value;
+      const isIncomplete = document.getElementById('item-incomplete').checked;
+
+      if (!name || isNaN(amount) || amount <= 0) {
+        alert('請填寫有效的名稱與金額！');
+        return;
+      }
+
+      if (!isIncomplete && selectedDates.size === 0) {
+        alert('請至少在日曆上點選一天，或勾選「未完全使用」！');
+        return;
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+
+      if (currentEditingId) {
+        // 編輯狀態
+        records = records.map(r => r.id === currentEditingId ? {
+          ...r,
+          name,
+          amount,
+          category,
+          isIncomplete,
+          dates: isIncomplete ? [] : Array.from(selectedDates).sort()
+        } : r);
+      } else {
+        // 新增狀態
+        const newRecord = {
+          id: Date.now().toString(),
+          name,
+          amount,
+          category,
+          isIncomplete,
+          createdDate: today,
+          dates: isIncomplete ? [] : Array.from(selectedDates).sort()
+        };
+        records.push(newRecord);
+      }
+
+      saveData();
+      resetForm();
+    }
+
+    function editRecord(id) {
+      const record = records.find(r => r.id === id);
+      if (!record) return;
+
+      currentEditingId = id;
+      document.getElementById('item-name').value = record.name;
+      document.getElementById('item-amount').value = record.amount;
+      document.getElementById('item-category').value = record.category;
+      document.getElementById('item-incomplete').checked = record.isIncomplete;
+
+      selectedDates = new Set(record.dates || []);
+      toggleIncomplete(record.isIncomplete);
+      renderCalendar();
+
+      document.getElementById('submit-btn').innerText = '儲存修改';
+      document.getElementById('cancel-edit-btn').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function deleteRecord(id) {
+      if (confirm('確定要刪除這筆帳目嗎？')) {
+        records = records.filter(r => r.id !== id);
+        saveData();
+      }
+    }
+
+    function resetForm() {
+      currentEditingId = null;
+      document.getElementById('item-name').value = '';
+      document.getElementById('item-amount').value = '';
+      document.getElementById('item-incomplete').checked = false;
+      selectedDates.clear();
+      toggleIncomplete(false);
+      renderCalendar();
+
+      document.getElementById('submit-btn').innerText = '加入帳目';
+      document.getElementById('cancel-edit-btn').style.display = 'none';
+    }
+
+    // 3. 頁面渲染邏輯
+    function renderAllPages() {
+      renderPage1();
+      renderPage2();
+      renderPage3();
+      renderPage4();
+    }
+
+    // 頁面 1: 原始記錄（按年月摺疊）
+    function renderPage1() {
+      const container = document.getElementById('raw-list');
+      container.innerHTML = '';
+
+      if (records.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:var(--text-secondary); margin-top:20px;">尚無記錄</p>';
+        return;
+      }
+
+      // 按年月分組
+      const groups = {};
+      records.forEach(r => {
+        const key = r.createdDate.substring(0, 7); // YYYY-MM
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(r);
+      });
+
+      Object.keys(groups).sort().reverse().forEach(monthKey => {
+        const groupEl = document.createElement('div');
+        const header = document.createElement('div');
+        header.className = 'group-header';
+        header.innerHTML = `<span>📅 ${monthKey}</span> <span>▽/▲ (${groups[monthKey].length} 筆)</span>`;
+        
+        const content = document.createElement('div');
+        content.className = 'group-content';
+
+        header.onclick = () => {
+          content.style.display = content.style.display === 'none' ? 'block' : 'none';
+        };
+
+        groups[monthKey].forEach(r => {
+          const item = document.createElement('div');
+          item.className = 'item-card';
+          item.innerHTML = `
+            <div>
+              <div class="item-title">${r.category} ${r.name}</div>
+              <div class="item-sub">記錄日: ${r.createdDate} ${r.isIncomplete ? '| <b style="color:#ff9500;">未完</b>' : `| 天數: ${r.dates.length}天`}</div>
+              <div class="item-actions">
+                <button class="action-btn" onclick="editRecord('${r.id}')">✏️ 編輯</button>
+                <button class="action-btn del" onclick="deleteRecord('${r.id}')">🗑️ 刪除</button>
+              </div>
+            </div>
+            <div class="item-amount">$${r.amount.toFixed(2)}</div>
+          `;
+          content.appendChild(item);
+        });
+
+        groupEl.appendChild(header);
+        groupEl.appendChild(content);
+        container.appendChild(groupEl);
+      });
+    }
+
+    // 頁面 2: 未完全使用項目 (無餘額顯示，僅項目與記錄日)
+    function renderPage2() {
+      const container = document.getElementById('incomplete-list');
+      container.innerHTML = '';
+
+      const incompleteItems = records.filter(r => r.isIncomplete);
+
+      if (incompleteItems.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:var(--text-secondary); margin-top:20px;">🎉 沒有未完全使用的項目</p>';
+        return;
+      }
+
+      incompleteItems.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'item-card';
+        item.innerHTML = `
+          <div>
+            <div class="item-title">${r.category} ${r.name}</div>
+            <div class="item-sub">記錄日: ${r.createdDate}</div>
+          </div>
+          <div>
+            <button class="action-btn" style="font-weight:bold;" onclick="switchTab(1, '1. 原始記錄'); editRecord('${r.id}');">✏️ 補點選日子</button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // 頁面 3: 每日實則（僅顯示被分攤日子的實質開銷）
+    function renderPage3() {
+      const container = document.getElementById('daily-list');
+      container.innerHTML = '';
+
+      const dailyMap = {}; // { "YYYY-MM-DD": [ { name, category, dailyAmount } ] }
+
+      records.forEach(r => {
+        if (!r.isIncomplete && r.dates && r.dates.length > 0) {
+          const dailyAmount = r.amount / r.dates.length;
+          r.dates.forEach(d => {
+            if (!dailyMap[d]) dailyMap[d] = [];
+            dailyMap[d].push({ name: r.name, category: r.category, dailyAmount });
+          });
+        }
+      });
+
+      const sortedDates = Object.keys(dailyMap).sort().reverse();
+
+      if (sortedDates.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:var(--text-secondary); margin-top:20px;">尚無已被分攤的每日開銷</p>';
+        return;
+      }
+
+      sortedDates.forEach(date => {
+        const items = dailyMap[date];
+        const dayTotal = items.reduce((sum, item) => sum + item.dailyAmount, 0);
+
+        const groupEl = document.createElement('div');
+        const header = document.createElement('div');
+        header.className = 'group-header';
+        header.style.background = '#e1f0ff';
+        header.innerHTML = `<span>🔵 ${date}</span> <span>實則支出: $${dayTotal.toFixed(2)}</span>`;
+
+        const content = document.createElement('div');
+        items.forEach(item => {
+          const el = document.createElement('div');
+          el.className = 'item-card';
+          el.innerHTML = `
+            <div>
+              <div class="item-title">${item.category} ${item.name}</div>
+              <div class="item-sub">當日均攤額</div>
+            </div>
+            <div class="item-amount">$${item.dailyAmount.toFixed(2)}</div>
+          `;
+          content.appendChild(el);
+        });
+
+        groupEl.appendChild(header);
+        groupEl.appendChild(content);
+        container.appendChild(groupEl);
+      });
+    }
+
+    // 頁面 4: 當月總計（按分類統計）
+    function renderPage4() {
+      const container = document.getElementById('monthly-summary');
+      container.innerHTML = '';
+
+      const currentMonthKey = new Date().toISOString().substring(0, 7); // 當前年月 YYYY-MM
+      const catTotals = {};
+      let totalSum = 0;
+
+      records.forEach(r => {
+        // 以記錄日為當月統計依據
+        if (r.createdDate.startsWith(currentMonthKey)) {
+          catTotals[r.category] = (catTotals[r.category] || 0) + r.amount;
+          totalSum += r.amount;
+        }
+      });
+
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <h3 style="margin-bottom:12px; text-align:center;">${currentMonthKey} 總結</h3>
+        <div style="font-size:24px; font-weight:bold; text-align:center; color:var(--primary); margin-bottom:16px;">
+          $${totalSum.toFixed(2)}
+        </div>
+      `;
+
+      if (Object.keys(catTotals).length === 0) {
+        card.innerHTML += '<p style="text-align:center; color:var(--text-secondary);">本月無消費記錄</p>';
+      } else {
+        Object.keys(catTotals).forEach(cat => {
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);';
+          row.innerHTML = `<span>${cat}</span> <b>$${catTotals[cat].toFixed(2)}</b>`;
+          card.appendChild(row);
+        });
+      }
+
+      container.appendChild(card);
+    }
+
+    // 4. Tab 頁面切換
+    function switchTab(tabIndex, title) {
+      document.getElementById('page-title').innerText = title;
+      
+      // 更新 Tab 樣式
+      document.querySelectorAll('.tab-item').forEach((btn, idx) => {
+        btn.classList.toggle('active', idx === tabIndex - 1);
+      });
+
+      // 切換 View
+      document.querySelectorAll('.page').forEach((page, idx) => {
+        page.classList.toggle('active', idx === tabIndex - 1);
+      });
+
+      // 只有頁面1顯示頂部輸入卡片，其他頁面隱藏以保持畫面潔淨
+      document.getElementById('form-card').style.display = (tabIndex === 1) ? 'block' : 'none';
+    }
+  </script>
+</body>
+</html>

@@ -6,10 +6,10 @@
     <title>時段記帳 App</title>
     <style>
         :root {
-            --bg: #1c1c1e;
-            --card: #2c2c2e;
-            --primary: #0a84ff;
-            --text: #ffffff;
+            --bg: #1c1c1e; /* Apple 日曆經典深黑 */
+            --card: #2c2c2e; /* 網格背景深灰 */
+            --primary: #0a84ff; /* 亮藍色 */
+            --text: #ffffff; /* 純白文字 */
             --gray: #aeaeb2;
             --border: #3a3a3c;
             --accent: #ff9f0a;
@@ -24,7 +24,7 @@
         label { display: block; font-size: 13px; color: var(--gray); margin-bottom: 6px; font-weight: 500; }
         input[type="number"], input[type="text"], select, input[type="month"] { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; background: #1c1c1e; color: #fff; -webkit-appearance: none; }
         
-        /* 參考圖二日曆外觀 */
+        /* 仿 Apple 原生配置的日曆網格 */
         .calendar-picker { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--card); }
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-weight: bold; font-size: 16px; }
         .cal-btn { background: none; border: none; font-size: 18px; padding: 5px 15px; color: var(--primary); font-weight: bold; cursor: pointer; }
@@ -32,7 +32,7 @@
         .cal-day-label { font-size: 12px; color: var(--gray); font-weight: 600; padding: 4px 0; }
         .cal-day { font-size: 15px; padding: 10px 0; border-radius: 50%; background: transparent; font-weight: 500; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; aspect-ratio: 1; }
         
-        /* 選中後的亮藍色圓圈 */
+        /* 選中日期後的正圓形高亮藍點 🔵 */
         .cal-day.selected { background-color: var(--primary) !important; color: #fff !important; font-weight: bold; }
         .cal-day.empty { cursor: default; }
         
@@ -67,7 +67,7 @@
         .del-btn { background: #3a3a3c; border: none; color: #ff453a; font-size: 13px; font-weight: 500; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
         .badge { background: #3a3a3c; color: var(--accent); font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 6px; }
         
-        /* 置底導航欄 */
+        /* 固定底欄導航欄（絕對顯示且防點擊阻擋） */
         .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background: var(--card); border-top: 1px solid var(--border); display: grid; grid-template-columns: repeat(4, 1fr); box-shadow: 0 -2px 10px rgba(0,0,0,0.3); z-index: 999; padding-bottom: env(safe-area-inset-bottom); }
         .tab-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; color: var(--gray); font-weight: 500; height: 100%; cursor: pointer; }
         .tab-item.active { color: var(--primary); }
@@ -86,7 +86,7 @@
     <header id="appHeader">原始消費流水帳</header>
 
     <div class="container">
-        <!-- 填寫表單 -->
+        <!-- 輸入區塊 -->
         <div class="card">
             <h3 id="formTitle">✏️ 記錄新時段開支</h3>
             <form id="expenseForm" onsubmit="saveExpense(event)">
@@ -144,10 +144,9 @@
             <input type="month" id="globalMonth" onchange="renderAll()">
         </div>
 
-        <!-- 4大分頁 -->
+        <!-- 四大分頁面板 -->
         <div id="page1" class="page active"><div id="rawFolderContainer"></div></div>
         <div id="page2" class="page"><div class="card"><h3>⏳ 未完全使用項目（等待補上日期）</h3><ul id="incompleteList" class="item-list"></ul></div></div>
         <div id="page3" class="page"><div class="card"><h3>📅 實則每日消費支出</h3><ul id="dailySplitList" class="item-list"></ul></div></div>
         <div id="page4" class="page"><div class="card"><h3>📊 當月真實均攤總開支</h3><div id="monthTotalAmount" class="total-header">$0.00</div><div id="chartSection"></div></div></div>
 
-        <div style="text-align:center; margin: 30px 0 10px 0;">
